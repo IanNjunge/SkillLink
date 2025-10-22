@@ -21,4 +21,3 @@ export default function Register() {
     </div>
   )
 }
-searchmentor.jsx
