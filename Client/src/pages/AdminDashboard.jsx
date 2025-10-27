@@ -8,6 +8,13 @@ export default function AdminDashboard() {
     { id: 3, name: 'Odindo Naliyo', skill: 'Flask', status: 'Pending' },
   ])
 
+  const stats = useMemo(() => {
+    const total = rows.length
+    const pending = rows.filter(r => r.status === 'Pending').length
+    const active = rows.filter(r => r.status === 'Active').length
+    return { total, pending, active }
+  }, [rows])
+
   const filtered = useMemo(() => {
     const q = query.toLowerCase()
     return rows.filter(r =>
@@ -29,9 +36,21 @@ export default function AdminDashboard() {
     <div className="container" style={{paddingTop: 24}}>
       <div className="badge" style={{marginBottom: 8}}>Admin Dashboard</div>
       <h1 className="title-lg">Mentor Verification</h1>
+
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', margin:'12px 0'}}>
+        <div className="card"><div className="muted" style={{fontSize:12}}>Pending</div><div style={{fontSize:28, fontWeight:700}}>{stats.pending}</div></div>
+        <div className="card"><div className="muted" style={{fontSize:12}}>Active</div><div style={{fontSize:28, fontWeight:700}}>{stats.active}</div></div>
+        <div className="card"><div className="muted" style={{fontSize:12}}>Total</div><div style={{fontSize:28, fontWeight:700}}>{stats.total}</div></div>
+      </div>
+
       <div className="card" style={{marginTop: 12}}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
-          <input className="input" placeholder="Search mentors, skills, status" value={query} onChange={e=>setQuery(e.target.value)} />
+          <input
+            value={query}
+            onChange={e=>setQuery(e.target.value)}
+            placeholder="Search mentors, skills, status"
+            style={{background:'#eef1f5', border:'none', padding:'14px 16px', borderRadius:'var(--radius)', outline:'none', fontSize:16, width:'100%'}}
+          />
         </div>
         <table className="table">
           <thead>
@@ -66,7 +85,7 @@ export default function AdminDashboard() {
       <div className="card">
         <div style={{display:'grid', gridTemplateColumns:'repeat(6, 1fr)', gap:12, alignItems:'end', height:160}}>
           {[40, 60, 80, 120, 100, 50].map((h,i) => (
-            <div key={i} style={{background:'#2563eb', height:h, borderRadius:6}} />
+            <div key={i} style={{background:'var(--primary)', height:h, borderRadius:6}} />
           ))}
         </div>
       </div>

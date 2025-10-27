@@ -1,4 +1,11 @@
 /* Basic resets */
+:root {
+  --primary: #3ba3ff;
+  --primary-600: #2992ee;
+  --surface: #ffffff;
+  --muted: #4b5563;
+  --radius: 16px;
+}
 html, body, #root { height: 100%; margin: 0; padding: 0; }
 * { box-sizing: border-box; }
 body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color: #111827; background: #f9fafb; }
@@ -6,6 +13,7 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarel
 /* Layout */
 .app { min-height: 100vh; }
 .container { max-width: 1024px; margin: 0 auto; padding: 16px; }
+@media (max-width: 640px) { .container { padding: 12px; } }
 
 /* Navbar */
 .navbar { position: sticky; top: 0; z-index: 10; background: #ffffff; border-bottom: 1px solid #e5e7eb; }
@@ -18,8 +26,8 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarel
 /* Buttons */
 .button { padding: 8px 12px; border-radius: 6px; border: 1px solid #e5e7eb; background: #ffffff; cursor: pointer; }
 .button:hover { background: #f9fafb; }
-.button-primary { background: #2563eb; color: #ffffff; border-color: #2563eb; }
-.button-primary:hover { background: #1d4ed8; }
+.button-primary { background: var(--primary); color: #ffffff; border-color: var(--primary); }
+.button-primary:hover { background: var(--primary-600); }
 .button-block { width: 100%; }
 
 /* Forms */
@@ -30,6 +38,7 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarel
 .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
 .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 @media (min-width: 768px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .grid { gap: 12px; } }
 
 /* Typography helpers */
 .title-lg { font-size: 24px; font-weight: 600; margin: 0 0 8px; }
