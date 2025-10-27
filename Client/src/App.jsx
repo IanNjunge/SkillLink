@@ -13,6 +13,7 @@ import Profile from './pages/Profile'
 import ForgotPassword from './pages/ForgotPassword'
 import Chat from './pages/Chat'
 import Conversations from './pages/Conversations'
+import LearnerRequests from './pages/LearnerRequests'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/conversations" element={<ProtectedRoute roles={['learner','mentor']}><Conversations /></ProtectedRoute>} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/requests" element={<ProtectedRoute roles={['learner']}><LearnerRequests /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>

@@ -1,17 +1,54 @@
- export default function MentorProfile() {
-  const mentor = {
-    name: 'Robinson Kimani',
-    skills: ['Python', 'Project Management'],
-    about: 'These locations checking were to assess on how to plan processes not only on desktop, all-liked. This cloud and workplaces.',
-    certificates: [
-      { id: 1, name: 'AWS Certified Cloud Practitioner.pdf' },
-      { id: 2, name: 'PMI Agile Foundations.png' },
-    ],
+ import { useMemo, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../state/AuthContext'
+
+const MOCK = {
+  1: { id: 1, name: 'Robinson Kimani', skills: ['React', 'UI'], about: 'Frontend engineer passionate about DX.' },
+  2: { id: 2, name: 'Brian Mbeumo', skills: ['Node', 'API', 'DB'], about: 'Backend engineer and API design.' },
+  3: { id: 3, name: 'ian NJunge', skills: ['Python', 'ML'], about: 'Data scientist and ML tutor.' },
+  4: { id: 4, name: 'Gideon lenkai', skills: ['Flutter', 'Dart'], about: 'Mobile developer building cross-platform apps.' },
+}
+
+export default function MentorProfile() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const mentor = useMemo(() => MOCK[id] || { id, name: 'Mentor', skills: [], about: '' }, [id])
+
+  const reviewsKey = `sl_reviews_${mentor.id}`
+  const [reviews, setReviews] = useState(() => { try { return JSON.parse(localStorage.getItem(reviewsKey))||[] } catch { return [] } })
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+
+  const avg = reviews.length ? (reviews.reduce((s,r)=>s+r.rating,0)/reviews.length).toFixed(1) : '—'
+
+  const submitReview = (e) => {
+    e.preventDefault()
+    if (!user || user.role!=='learner') return alert('Only learners can leave reviews')
+    const item = { id: Date.now(), by: user.email||user.name, rating: Number(rating), comment: comment.trim(), time: new Date().toISOString() }
+    const next = [...reviews, item]
+    setReviews(next)
+    localStorage.setItem(reviewsKey, JSON.stringify(next))
+    setComment('')
+  }
+
+  const reqKey = 'sl_requests'
+  const [topic, setTopic] = useState('')
+  const [message, setMessage] = useState('')
+  const requestMentorship = (e) => {
+    e.preventDefault()
+    if (!user || user.role!=='learner') return alert('Login as a learner to request mentorship')
+    const list = (()=>{ try { return JSON.parse(localStorage.getItem(reqKey))||[] } catch { return [] } })()
+    const item = { id: Date.now(), mentorId: mentor.id, mentorName: mentor.name, mentorEmail: `${mentor.name.split(' ')[0].toLowerCase()}@example.com`, learnerEmail: user.email, topic, message, status:'Pending', createdAt: new Date().toISOString() }
+    localStorage.setItem(reqKey, JSON.stringify([item, ...list]))
+    alert('Request sent (mock). You can track it in your Requests page.')
+    setTopic(''); setMessage('')
+    navigate('/requests')
   }
 
   return (
     <div className="container" style={{paddingTop: 24}}>
-      <div className="badge" style={{marginBottom: 8}}>Mentor Profile / Skill Verification</div>
+      <div className="badge" style={{marginBottom: 8}}>Mentor Profile</div>
       <div className="card">
         <div style={{display:'flex', alignItems:'center', gap:16}}>
           <div className="avatar" />
@@ -20,24 +57,45 @@
             <div className="tags" style={{marginTop:8}}>
               {mentor.skills.map((s,i) => (<span key={i} className="tag">{s}</span>))}
             </div>
+            <div className="muted" style={{fontSize:14, marginTop:6}}>Average rating: {avg}</div>
           </div>
         </div>
       </div>
 
       <div className="card" style={{marginTop:16}}>
         <h2 className="title-md">About</h2>
-        <p className="muted" style={{marginTop:8}}>{mentor.about}</p>
+        <p className="muted" style={{marginTop:8}}>{mentor.about || '—'}</p>
       </div>
 
       <div className="card" style={{marginTop:16}}>
-        <h2 className="title-md">Certificates</h2>
-        <div className="form" style={{marginTop:8}}>
-          {mentor.certificates.map(c => (
-            <div key={c.id} className="card" style={{padding:12, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <span>{c.name}</span>
-              <button className="button">View</button>
+        <h2 className="title-md">Request Mentorship</h2>
+        <form onSubmit={requestMentorship} className="form" style={{marginTop:8}}>
+          <input className="input" placeholder="Topic (e.g., React state)" value={topic} onChange={e=>setTopic(e.target.value)} />
+          <textarea className="input" placeholder="Describe what you need help with" value={message} onChange={e=>setMessage(e.target.value)} rows={4} />
+          <button className="button button-primary">Send Request</button>
+        </form>
+      </div>
+
+      <div className="card" style={{marginTop:16}}>
+        <h2 className="title-md">Reviews</h2>
+        <form onSubmit={submitReview} className="form" style={{marginTop:8}}>
+          <select className="input" value={rating} onChange={e=>setRating(e.target.value)}>
+            {[5,4,3,2,1].map(r=> <option key={r} value={r}>{r} stars</option>)}
+          </select>
+          <textarea className="input" placeholder="Share your experience" value={comment} onChange={e=>setComment(e.target.value)} rows={3} />
+          <button className="button">Submit Review</button>
+        </form>
+        <div className="form" style={{marginTop:12}}>
+          {reviews.map(r => (
+            <div key={r.id} className="card" style={{padding:12}}>
+              <div style={{display:'flex', justifyContent:'space-between'}}>
+                <div><strong>{r.by}</strong> • {r.rating}★</div>
+                <div className="muted" style={{fontSize:12}}>{new Date(r.time).toLocaleString()}</div>
+              </div>
+              <div style={{marginTop:6}}>{r.comment}</div>
             </div>
           ))}
+          {reviews.length===0 && <div className="muted">No reviews yet.</div>}
         </div>
       </div>
     </div>

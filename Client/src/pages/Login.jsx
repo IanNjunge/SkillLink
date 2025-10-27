@@ -13,7 +13,7 @@ export default function Login() {
     e.preventDefault()
     // Simulate login; replace with real API call when backend is ready
     if (!email || !password) return alert('Enter email and password')
-    const finalRole = (email.trim().toLowerCase() === 'admin@skilllink.com') ? 'admin' : role
+    const finalRole = role === 'admin' ? 'admin' : (email.trim().toLowerCase() === 'admin@skilllink.com') ? 'admin' : role
     login({ email, role: finalRole })
     navigate(finalRole === 'admin' ? '/admin' : finalRole === 'mentor' ? '/mentor' : '/dashboard')
   }
@@ -27,9 +27,10 @@ export default function Login() {
         </div>
         <h1 className="title-lg" style={{textAlign:'center', margin:'16px 0 24px'}}>Sign In To SkillLink</h1>
         <form onSubmit={submit} style={{maxWidth: 640, margin:'0 auto', display:'flex', flexDirection:'column', gap:18}}>
-          <div style={{display:'flex', gap:12}}>
+          <div style={{display:'flex', gap:12, flexWrap:'wrap'}}>
             <button type="button" onClick={()=>setRole('learner')} className="button button-block" style={{background: role==='learner' ? 'var(--primary)' : '#eef1f5', color: role==='learner' ? '#fff' : '#222', border:'none', padding:'12px', borderRadius:'var(--radius)', fontWeight:600}}>Learner</button>
             <button type="button" onClick={()=>setRole('mentor')} className="button button-block" style={{background: role==='mentor' ? 'var(--primary)' : '#eef1f5', color: role==='mentor' ? '#fff' : '#222', border:'none', padding:'12px', borderRadius:'var(--radius)', fontWeight:600}}>Mentor</button>
+            <button type="button" onClick={()=>setRole('admin')} className="button button-block" style={{background: role==='admin' ? 'var(--primary)' : '#eef1f5', color: role==='admin' ? '#fff' : '#222', border:'none', padding:'12px', borderRadius:'var(--radius)', fontWeight:600}}>Admin</button>
           </div>
           <input
             placeholder="Email"
