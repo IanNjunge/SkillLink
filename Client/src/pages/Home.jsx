@@ -1,4 +1,6 @@
- export default function Home() {
+ import { Link } from 'react-router-dom'
+
+export default function Home() {
   return (
     <div className="container" style={{paddingTop: 0}}>
       <div style={{
@@ -12,12 +14,12 @@
           <h1 className="title-xl" style={{color:'#fff'}}>Connect. Learn. Grow</h1>
           <p style={{opacity:0.95, marginTop:8}}>SkillLink connects learners with verified mentors for affordable, accessible peer learning and mentorship.</p>
           <div style={{display:'flex', gap:24, flexWrap:'wrap', marginTop:32}}>
-            <a href="/mentors" className="button" style={{
+            <Link to="/mentors" className="button" style={{
               background:'#e9eef3', color:'#222', padding:'16px 28px', borderRadius:16, minWidth:220, textAlign:'center', fontWeight:600
-            }}>Find a mentor</a>
-            <a href="/dashboard" className="button" style={{
+            }}>Find a mentor</Link>
+            <Link to="/dashboard" className="button" style={{
               background:'#e9eef3', color:'#222', padding:'16px 28px', borderRadius:16, minWidth:220, textAlign:'center', fontWeight:600
-            }}>Go to Dashboard</a>
+            }}>Go to Dashboard</Link>
           </div>
         </div>
       </div>
