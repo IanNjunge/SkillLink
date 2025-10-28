@@ -2,10 +2,10 @@
 import { useNavigate } from 'react-router-dom'
 
 const MOCK_MENTORS = [
-  { id: 1, name: 'Robinson Kimani', title: 'Frontend Engineer', skills: ['React','JS','UI'], rating: 4.8 },
-  { id: 2, name: 'Brian Mbeumo', title: 'Backend Engineer', skills: ['Node','API','DB'], rating: 4.6 },
-  { id: 3, name: 'ian NJunge', title: 'Data Scientist', skills: ['Python','ML','Pandas'], rating: 4.9 },
-  { id: 4, name: 'Gideon lenkai', title: 'Mobile Dev', skills: ['Flutter','Dart'], rating: 4.5 },
+  { id: 1, name: 'Robinson Kimani', verifiedIcon:'/home/ian/Pictures/verify.png', title: 'Frontend Engineer', skills: ['React','JS','UI'], rating: 4.8 },
+  { id: 2, name: 'Brian Mbeumo', verifiedIcon:'/home/ian/Pictures/verify.png', title: 'Backend Engineer', skills: ['Node','API','DB'], rating: 4.6 },
+  { id: 3, name: 'ian NJunge', verifiedIcon:'/home/ian/Pictures/verify.png', title: 'Data Scientist', skills: ['Python','ML','Pandas'], rating: 4.9 },
+  { id: 4, name: 'Gideon lenkai', verifiedIcon:'/home/ian/Pictures/verify.png', title: 'Mobile Dev', skills: ['Flutter','Dart'], rating: 4.5 },
 ]
 
 export default function SearchMentors() {
