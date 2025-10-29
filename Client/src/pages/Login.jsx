@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
+import { Api } from '../state/api'
 
 export default function Login() {
   const { login } = useAuth()
@@ -8,14 +9,21 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('learner')
+  const [error, setError] = useState('')
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    // Simulate login; replace with real API call when backend is ready
-    if (!email || !password) return alert('Enter email and password')
-    const finalRole = role === 'admin' ? 'admin' : (email.trim().toLowerCase() === 'admin@skilllink.com') ? 'admin' : role
-    login({ email, role: finalRole })
-    navigate(finalRole === 'admin' ? '/admin' : finalRole === 'mentor' ? '/mentor' : '/dashboard')
+    setError('')
+    if (!email || !password) return setError('Enter email and password')
+    try {
+      const user = await Api.login({ email, password })
+      // keep chosen role only for redirect (backend returns stored role)
+      login(user)
+      const finalRole = user.role || role
+      navigate(finalRole === 'admin' ? '/admin' : finalRole === 'mentor' ? '/mentor' : '/dashboard')
+    } catch (err) {
+      setError(err.message || 'Login failed')
+    }
   }
 
   return (
@@ -26,6 +34,7 @@ export default function Login() {
           <div style={{fontWeight:700}}>Login</div>
         </div>
         <h1 className="title-lg" style={{textAlign:'center', margin:'16px 0 24px'}}>Sign In To SkillLink</h1>
+        {error && <div className="card" style={{padding:12, background:'#ffe5e5', color:'#a40000'}}>{error}</div>}
         <form onSubmit={submit} style={{maxWidth: 640, margin:'0 auto', display:'flex', flexDirection:'column', gap:18}}>
           <div style={{display:'flex', gap:12, flexWrap:'wrap'}}>
             <button type="button" onClick={()=>setRole('learner')} className="button button-block" style={{background: role==='learner' ? 'var(--primary)' : '#eef1f5', color: role==='learner' ? '#fff' : '#222', border:'none', padding:'12px', borderRadius:'var(--radius)', fontWeight:600}}>Learner</button>

@@ -1,19 +1,26 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
+import { Api } from '../state/api'
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const navigate = useNavigate()
   const { login } = useAuth()
   const [role, setRole] = useState('learner')
+  const [error, setError] = useState('')
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    if (!form.name || !form.email || !form.password) return alert('Please fill all fields')
-    // Simulate registration: set user in context and redirect by role
-    login({ name: form.name, email: form.email, role })
-    navigate(role === 'mentor' ? '/mentor' : '/dashboard')
+    setError('')
+    if (!form.name || !form.email || !form.password) return setError('Please fill all fields')
+    try {
+      const user = await Api.register({ name: form.name, email: form.email, password: form.password, role })
+      login(user)
+      navigate(role === 'mentor' ? '/mentor' : '/dashboard')
+    } catch (err) {
+      setError(err.message || 'Registration failed')
+    }
   }
 
   return (
@@ -24,6 +31,7 @@ export default function Register() {
           <div style={{fontWeight:700}}>Register</div>
         </div>
         <h1 className="title-lg" style={{textAlign:'center', margin:'16px 0 24px'}}>Create Your Account</h1>
+        {error && <div className="card" style={{padding:12, background:'#ffe5e5', color:'#a40000'}}>{error}</div>}
         <form onSubmit={submit} style={{display:'flex', flexDirection:'column', gap:18}}>
           <div style={{display:'flex', gap:12}}>
             <button type="button" onClick={()=>setRole('learner')} className="button button-block" style={{background: role==='learner' ? 'var(--primary)' : '#eef1f5', color: role==='learner' ? '#fff' : '#222', border:'none', padding:'12px', borderRadius:'var(--radius)', fontWeight:600}}>Learner</button>
@@ -42,7 +50,7 @@ export default function Register() {
             style={{background:'#eef1f5', border:'none', padding:'16px 18px', borderRadius:'var(--radius)', outline:'none', fontSize:16}}
           />
           <input
-            placeholder="Password"
+            placeholder="Password (min 8 chars)"
             type="password"
             value={form.password}
             onChange={e=>setForm({...form,password:e.target.value})}

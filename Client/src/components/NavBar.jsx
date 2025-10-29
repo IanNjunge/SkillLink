@@ -39,6 +39,7 @@ export default function NavBar() {
             </Link>
           )}
           {user && <Link to={user.role === 'mentor' ? "/mentor" : "/dashboard"} className="nav-link">Dashboard</Link>}
+          {user && <Link to="/links" className="nav-link">Links</Link>}
           {user?.role === 'admin' && <Link to="/admin" className="nav-link">Admin</Link>}
           {/* Profile link hidden to match UI preview */}
           {!user ? (
