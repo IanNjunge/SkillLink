@@ -1,67 +1,19 @@
-<<<<<<< HEAD
-export default function MentorProfile() {
-	const mentor = {
-		name: 'Robinson Kimani',
-		skills: ['Python', 'Project Management'],
-		about: 'These locations checking were to assess on how to plan processes not only on desktop, all-liked. This cloud and workplaces.',
-		certificates: [
-			{ id: 1, name: 'AWS Certified Cloud Practitioner.pdf' },
-			{ id: 2, name: 'PMI Agile Foundations.png' },
-		],
-	}
-
-	return (
-		<div className="container" style={{paddingTop: 24}}>
-			<div className="badge" style={{marginBottom: 8}}>Mentor Profile / Skill Verification</div>
-			<div className="card">
-				<div style={{display:'flex', alignItems:'center', gap:16}}>
-					<div className="avatar" />
-					<div>
-						<div className="title-md" style={{margin:0}}>{mentor.name}</div>
-						<div className="tags" style={{marginTop:8}}>
-							{mentor.skills.map((s,i) => (<span key={i} className="tag">{s}</span>))}
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div className="card" style={{marginTop:16}}>
-				<h2 className="title-md">About</h2>
-				<p className="muted" style={{marginTop:8}}>{mentor.about}</p>
-			</div>
-
-			<div className="card" style={{marginTop:16}}>
-				<h2 className="title-md">Certificates</h2>
-				<div className="form" style={{marginTop:8}}>
-					{mentor.certificates.map(c => (
-						<div key={c.id} className="card" style={{padding:12, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-							<span>{c.name}</span>
-							<button className="button">View</button>
-						</div>
-					))}
-				</div>
-			</div>
-		</div>
-	)
-}
- 
-=======
- import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
 
 const MOCK = {
-  1: { id: 1, name: 'Robinson Kimani', skills: ['React', 'UI'], about: 'Frontend engineer passionate about DX.' },
-  2: { id: 2, name: 'Brian Mbeumo', skills: ['Node', 'API', 'DB'], about: 'Backend engineer and API design.' },
-  3: { id: 3, name: 'ian NJunge', skills: ['Python', 'ML'], about: 'Data scientist and ML tutor.' },
-  4: { id: 4, name: 'Gideon lenkai', skills: ['Flutter', 'Dart'], about: 'Mobile developer building cross-platform apps.' },
+  1: { id: 1, name: 'Robinson Kimani', skills: ['React', 'UI'], about: 'Frontend engineer passionate about DX.', certificates: ['AWS Certified Cloud Practitioner.pdf', 'PMI Agile Foundations.png'] },
+  2: { id: 2, name: 'Brian Mbeumo', skills: ['Node', 'API', 'DB'], about: 'Backend engineer and API design.', certificates: [] },
+  3: { id: 3, name: 'ian NJunge', skills: ['Python', 'ML'], about: 'Data scientist and ML tutor.', certificates: [] },
+  4: { id: 4, name: 'Gideon lenkai', skills: ['Flutter', 'Dart'], about: 'Mobile developer building cross-platform apps.', certificates: [] },
 }
 
 export default function MentorProfile() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const mentor = useMemo(() => MOCK[id] || { id, name: 'Mentor', skills: [], about: '' }, [id])
+  const mentor = useMemo(() => MOCK[id] || { id, name: 'Mentor', skills: [], about: '', certificates: [] }, [id])
 
   const reviewsKey = `sl_reviews_${mentor.id}`
   const [reviews, setReviews] = useState(() => { try { return JSON.parse(localStorage.getItem(reviewsKey))||[] } catch { return [] } })
@@ -97,6 +49,7 @@ export default function MentorProfile() {
   return (
     <div className="container" style={{paddingTop: 24}}>
       <div className="badge" style={{marginBottom: 8}}>Mentor Profile</div>
+
       <div className="card">
         <div style={{display:'flex', alignItems:'center', gap:16}}>
           <div className="avatar" />
@@ -114,6 +67,20 @@ export default function MentorProfile() {
         <h2 className="title-md">About</h2>
         <p className="muted" style={{marginTop:8}}>{mentor.about || '—'}</p>
       </div>
+
+      {mentor.certificates.length > 0 && (
+        <div className="card" style={{marginTop:16}}>
+          <h2 className="title-md">Certificates</h2>
+          <div className="form" style={{marginTop:8}}>
+            {mentor.certificates.map((c,i) => (
+              <div key={i} className="card" style={{padding:12, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <span>{c}</span>
+                <button className="button">View</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{marginTop:16}}>
         <h2 className="title-md">Request Mentorship</h2>
@@ -149,4 +116,3 @@ export default function MentorProfile() {
     </div>
   )
 }
->>>>>>> main

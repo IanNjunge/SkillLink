@@ -1,11 +1,9 @@
 import { Routes, Route } from 'react-router-dom'
-import { AuthProvider, ProtectedRoute } from './state/AuthContext'
-import NavBar from './components/NavBar'
-<<<<<<< HEAD
-import ErrorBoundary from './components/ErrorBoundary'
-=======
+import { AuthProvider } from './state/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
->>>>>>> main
+import NavBar from './components/NavBar'
+import ErrorBoundary from './components/ErrorBoundary'
+
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -21,72 +19,35 @@ import Conversations from './pages/Conversations'
 import LearnerRequests from './pages/LearnerRequests'
 import NotFound from './pages/NotFound'
 import Links from './pages/Links'
+
 function App() {
   return (
-<<<<<<< HEAD
     <ErrorBoundary>
       <AuthProvider>
         <div className="app">
           <NavBar />
           <div className="container">
             <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/mentors" element={<SearchMentors />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            {/* Protected routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/mentor" element={
-              <ProtectedRoute>
-                <MentorDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/mentor/:id" element={
-              <ProtectedRoute>
-                <MentorProfile />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin" element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/mentors" element={<SearchMentors />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+
+              {/* Protected routes with roles */}
+              <Route path="/dashboard" element={<ProtectedRoute roles={['learner']}><Dashboard /></ProtectedRoute>} />
+              <Route path="/mentor" element={<ProtectedRoute roles={['mentor']}><MentorDashboard /></ProtectedRoute>} />
+              <Route path="/mentor/:id" element={<MentorProfile />} />
+              <Route path="/chat/:mentorId" element={<ProtectedRoute roles={['learner','mentor']}><Chat /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/conversations" element={<ProtectedRoute roles={['learner','mentor']}><Conversations /></ProtectedRoute>} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/links" element={<ProtectedRoute roles={['learner','mentor','admin']}><Links /></ProtectedRoute>} />
+              <Route path="/requests" element={<ProtectedRoute roles={['learner']}><LearnerRequests /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
         </div>
-=======
-    <div className="app">
-      <NavBar />
-      <div className="container">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/mentors" element={<SearchMentors />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/dashboard" element={<ProtectedRoute roles={['learner']}><Dashboard /></ProtectedRoute>} />
-          <Route path="/mentor" element={<ProtectedRoute roles={['mentor']}><MentorDashboard /></ProtectedRoute>} />
-          <Route path="/mentor/:id" element={<MentorProfile />} />
-          <Route path="/chat/:mentorId" element={<ProtectedRoute roles={['learner','mentor']}><Chat /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/conversations" element={<ProtectedRoute roles={['learner','mentor']}><Conversations /></ProtectedRoute>} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/links" element={<ProtectedRoute roles={['learner','mentor','admin']}><Links /></ProtectedRoute>} />
-          <Route path="/requests" element={<ProtectedRoute roles={['learner']}><LearnerRequests /></ProtectedRoute>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
->>>>>>> main
-      </div>
       </AuthProvider>
     </ErrorBoundary>
   )

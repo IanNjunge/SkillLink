@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { createContext, useContext, useState, useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
@@ -8,7 +7,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Check auth status on mount
   useEffect(() => {
     fetch('/auth/me', { credentials: 'include' })
       .then(r => r.ok ? r.json() : Promise.reject())
@@ -22,7 +20,7 @@ export function AuthProvider({ children }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
-      credentials: 'include' // needed for cookies
+      credentials: 'include'
     })
     if (!res.ok) throw new Error('Login failed')
     const data = await res.json()
@@ -44,33 +42,25 @@ export function AuthProvider({ children }) {
   }
 
   const logout = async () => {
-    await fetch('/auth/logout', { 
-      method: 'POST',
-      credentials: 'include'
-    })
+    await fetch('/auth/logout', { method: 'POST', credentials: 'include' })
     setUser(null)
   }
 
   const deleteAccount = async () => {
-    await fetch('/auth/me', {
-      method: 'DELETE',
-      credentials: 'include'
-    })
+    await fetch('/auth/me', { method: 'DELETE', credentials: 'include' })
     setUser(null)
   }
 
-  if (loading) {
-    return <div>Loading...</div>
-  }
+  if (loading) return <div>Loading...</div>
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout,
+    <AuthContext.Provider value={{
+      user,
+      login,
       register,
+      logout,
       deleteAccount,
-      isAuthenticated: !!user 
+      isAuthenticated: !!user
     }}>
       {children}
     </AuthContext.Provider>
@@ -82,7 +72,7 @@ export function useAuth() {
 }
 
 export function ProtectedRoute({ children }) {
-  const { user, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
   const location = useLocation()
 
   if (!isAuthenticated) {
@@ -91,38 +81,3 @@ export function ProtectedRoute({ children }) {
 
   return children
 }
-=======
- import { createContext, useContext, useState, useEffect } from 'react'
-
-const AuthContext = createContext(null)
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-
-  useEffect(() => {
-    const saved = localStorage.getItem('sl_user')
-    if (saved) setUser(JSON.parse(saved))
-  }, [])
-
-  const login = (data) => {
-    // data may include: { email, name, role }
-    setUser(data)
-    localStorage.setItem('sl_user', JSON.stringify(data))
-  }
-
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('sl_user')
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
-
-export function useAuth() {
-  return useContext(AuthContext)
-}
->>>>>>> main
