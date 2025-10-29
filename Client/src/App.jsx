@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import MentorProfile from './pages/MentorProfile'
 import Profile from './pages/Profile'
 import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Chat from './pages/Chat'
 import Conversations from './pages/Conversations'
 import LearnerRequests from './pages/LearnerRequests'
@@ -33,6 +34,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Protected routes with roles */}
               <Route path="/dashboard" element={<ProtectedRoute roles={['learner']}><Dashboard /></ProtectedRoute>} />
