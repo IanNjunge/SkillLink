@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+const TOKEN_KEY = 'sl_token'
+
 const MOCK = {
   1: { id: 1, name: 'Robinson Kimani', skills: ['React', 'UI'], about: 'Frontend engineer passionate about DX.', certificates: ['AWS Certified Cloud Practitioner.pdf', 'PMI Agile Foundations.png'] },
   2: { id: 2, name: 'Brian Mbeumo', skills: ['Node', 'API', 'DB'], about: 'Backend engineer and API design.', certificates: [] },
@@ -35,15 +38,29 @@ export default function MentorProfile() {
   const reqKey = 'sl_requests'
   const [topic, setTopic] = useState('')
   const [message, setMessage] = useState('')
-  const requestMentorship = (e) => {
+  const requestMentorship = async (e) => {
     e.preventDefault()
     if (!user || user.role!=='learner') return alert('Login as a learner to request mentorship')
-    const list = (()=>{ try { return JSON.parse(localStorage.getItem(reqKey))||[] } catch { return [] } })()
-    const item = { id: Date.now(), mentorId: mentor.id, mentorName: mentor.name, mentorEmail: `${mentor.name.split(' ')[0].toLowerCase()}@example.com`, learnerEmail: user.email, topic, message, status:'Pending', createdAt: new Date().toISOString() }
-    localStorage.setItem(reqKey, JSON.stringify([item, ...list]))
-    alert('Request sent (mock). You can track it in your Requests page.')
-    setTopic(''); setMessage('')
-    navigate('/requests')
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) return alert('Session expired. Please login again.')
+    try {
+      const res = await fetch(`${BASE_URL}/requests/`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ mentor_id: Number(mentor.id), topic: topic.trim(), message: message.trim() })
+      })
+      const data = await res.json().catch(()=> ({}))
+      if (!res.ok) throw new Error(data.message || 'Failed to send request')
+      // store a minimal local copy for quick UI; source of truth is API
+      const list = (()=>{ try { return JSON.parse(localStorage.getItem(reqKey))||[] } catch { return [] } })()
+      const item = { id: data.id || Date.now(), mentorId: mentor.id, mentorName: mentor.name, learnerEmail: user.email, topic, message, status: (data.status||'pending').replace(/^./, c=>c.toUpperCase()) }
+      localStorage.setItem(reqKey, JSON.stringify([item, ...list]))
+      alert('Request sent. You can track it in your Requests page.')
+      setTopic(''); setMessage('')
+      navigate('/requests')
+    } catch (err) {
+      alert(err.message || 'Failed to send request')
+    }
   }
 
   return (

@@ -2,6 +2,9 @@
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+const TOKEN_KEY = 'sl_token'
+
 export default function MentorDashboard() {
   const [skills, setSkills] = useState(() => {
     try {
@@ -82,24 +85,53 @@ export default function MentorDashboard() {
 }
 
 function RequestsTable() {
-  const [items, setItems] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('sl_requests')) || [] } catch { return [] }
-  })
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  useEffect(() => {
-    const t = setInterval(() => {
-      try { setItems(JSON.parse(localStorage.getItem('sl_requests')) || []) } catch {}
-    }, 800)
-    return () => clearInterval(t)
-  }, [])
-
-  const update = (id, status) => {
-    const next = items.map(x => x.id === id ? { ...x, status } : x)
-    setItems(next)
-    localStorage.setItem('sl_requests', JSON.stringify(next))
+  const load = async () => {
+    setLoading(true)
+    setError('')
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) { setError('Not authenticated'); setLoading(false); return }
+    try {
+      const res = await fetch(`${BASE_URL}/requests/incoming`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json().catch(()=> [])
+      if (!res.ok) throw new Error(data.message || 'Failed to load requests')
+      // normalize
+      const list = (data || []).map(r => ({
+        id: r.id,
+        learnerEmail: r.learner_email || r.learnerEmail || r.learner?.email || '—',
+        topic: r.topic,
+        status: r.status
+      }))
+      setItems(list)
+    } catch (e) {
+      setError(e.message || 'Failed to load requests')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!items.length) return <div className="muted" style={{marginTop:12}}>No requests yet.</div>
+  useEffect(() => { load() }, [])
+
+  const act = async (id, action) => {
+    setError('')
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) return setError('Not authenticated')
+    try {
+      const res = await fetch(`${BASE_URL}/requests/${id}/${action}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json().catch(()=> ({}))
+      if (!res.ok) throw new Error(data.message || 'Action failed')
+      setItems(prev => prev.map(x => x.id === id ? { ...x, status: action === 'accept' ? 'accepted' : action === 'decline' ? 'declined' : x.status } : x))
+    } catch (e) {
+      setError(e.message || 'Action failed')
+    }
+  }
+
+  if (loading) return <div style={{marginTop:12}}>Loading requests...</div>
+  if (error) return <div className="card" style={{marginTop:12, padding:12, background:'#ffe5e5', color:'#a40000'}}>{error}</div>
+  if (!items.length) return <div className="muted" style={{marginTop:12}}>No incoming requests.</div>
 
   return (
     <div style={{marginTop:12}}>
@@ -119,13 +151,13 @@ function RequestsTable() {
               <td>{r.topic}</td>
               <td>{r.status}</td>
               <td>
-                {r.status === 'Pending' ? (
+                {r.status?.toLowerCase() === 'pending' ? (
                   <>
-                    <button className="button button-primary" onClick={()=>update(r.id, 'Accepted')}>Accept</button>{' '}
-                    <button className="button" onClick={()=>update(r.id, 'Declined')}>Decline</button>
+                    <button className="button button-primary" onClick={()=>act(r.id, 'accept')}>Accept</button>{' '}
+                    <button className="button" onClick={()=>act(r.id, 'decline')}>Decline</button>
                   </>
                 ) : (
-                  <button className="button" onClick={()=>update(r.id, 'Pending')}>Mark Pending</button>
+                  <button className="button" onClick={load}>Refresh</button>
                 )}
               </td>
             </tr>
@@ -137,47 +169,143 @@ function RequestsTable() {
 }
 
 function EvidenceSection() {
-  const [uploads, setUploads] = useState(() => { try { return JSON.parse(localStorage.getItem('sl_evidence_uploads')) || [] } catch { return [] } })
-  const [links, setLinks] = useState(() => { try { return JSON.parse(localStorage.getItem('sl_evidence_links')) || { github:'', linkedin:'', demo:'', description:'' } } catch { return { github:'', linkedin:'', demo:'', description:'' } } })
+  const [items, setItems] = useState([])
+  const [desc, setDesc] = useState('')
+  const [github, setGithub] = useState('')
+  const [linkedin, setLinkedin] = useState('')
+  const [demo, setDemo] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [submittedMsg, setSubmittedMsg] = useState('')
 
-  useEffect(() => { localStorage.setItem('sl_evidence_uploads', JSON.stringify(uploads)) }, [uploads])
-  useEffect(() => { localStorage.setItem('sl_evidence_links', JSON.stringify(links)) }, [links])
+  // load my evidence
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) { setLoading(false); return }
+    fetch(`${BASE_URL}/evidence/`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(async r => { if (!r.ok) throw new Error(await r.text().catch(()=>'')); return r.json() })
+      .then(data => setItems(Array.isArray(data) ? data : []))
+      .catch(() => setError('Failed to load evidence'))
+      .finally(() => setLoading(false))
+  }, [])
 
-  const onFile = (e) => {
+  const onFile = async (e) => {
     const f = e.target.files?.[0]
     if (!f) return
-    const url = URL.createObjectURL(f)
-    setUploads(prev => [{ id: Date.now(), name: f.name, url, type: f.type }, ...prev])
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) { setError('Not authenticated'); return }
+    try {
+      const fd = new FormData()
+      fd.append('file', f)
+      if (desc.trim()) fd.append('description', desc.trim())
+      const res = await fetch(`${BASE_URL}/evidence/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd
+      })
+      const data = await res.json().catch(()=> ({}))
+      if (!res.ok) throw new Error(data.message || 'Upload failed')
+      setItems(prev => [data, ...prev])
+      setDesc('')
+    } catch (err) {
+      setError(err.message || 'Upload failed')
+    } finally {
+      e.target.value = ''
+    }
   }
 
-  const remove = (id) => setUploads(prev => prev.filter(x => x.id !== id))
+  const remove = async (id) => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) return
+    try {
+      const r = await fetch(`${BASE_URL}/evidence/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      if (!r.ok) throw new Error()
+      setItems(prev => prev.filter(x => x.id !== id))
+    } catch {
+      setError('Failed to delete evidence')
+    }
+  }
+
+  // add link evidence (GitHub/LinkedIn/Demo)
+  const addLink = async (kind, url) => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) return setError('Not authenticated')
+    const u = (url || '').trim()
+    if (!u) return
+    try {
+      const res = await fetch(`${BASE_URL}/evidence/link`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ kind, url: u, name: kind.charAt(0).toUpperCase()+kind.slice(1), description: desc.trim() || undefined })
+      })
+      const data = await res.json().catch(()=> ({}))
+      if (!res.ok) throw new Error(data.message || 'Failed to add link')
+      setItems(prev => [data, ...prev])
+      if (kind==='github') setGithub('')
+      if (kind==='linkedin') setLinkedin('')
+      if (kind==='demo') setDemo('')
+      setDesc('')
+    } catch (err) {
+      setError(err.message || 'Failed to add link')
+    }
+  }
+
+  // submit evidence for review (UX confirmation)
+  const submitForReview = async () => {
+    setSubmittedMsg('')
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) return setError('Not authenticated')
+    try {
+      const r = await fetch(`${BASE_URL}/evidence/submit`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+      const data = await r.json().catch(()=> ({}))
+      if (!r.ok) throw new Error(data.message || 'Submit failed')
+      setSubmittedMsg(`Submitted. Pending: ${data.pending}, Total: ${data.total}`)
+    } catch (err) {
+      setError(err.message || 'Submit failed')
+    }
+  }
 
   return (
     <div className="card" style={{marginTop:16}}>
       <h2 className="title-md">Evidence</h2>
+      {error && <div className="card" style={{padding:12, background:'#ffe5e5', color:'#a40000'}}>{error}</div>}
       <div className="form" style={{marginTop:8}}>
         <label className="button" style={{width:'fit-content', cursor:'pointer'}}>
           Upload PDF/Image
           <input type="file" accept="image/*,application/pdf" onChange={onFile} style={{display:'none'}} />
         </label>
-        <div className="grid" style={{gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))'}}>
-          {uploads.map(u => (
-            <div key={u.id} className="card" style={{padding:12}}>
-              {u.type?.startsWith('image/') ? (
-                <img src={u.url} alt={u.name} style={{maxWidth:'100%', borderRadius:8}} />
-              ) : (
-                <a href={u.url} download={u.name}>{u.name}</a>
-              )}
-              <div style={{display:'flex', justifyContent:'flex-end', marginTop:8}}>
-                <button className="button" onClick={()=>remove(u.id)}>Remove</button>
-              </div>
-            </div>
-          ))}
+        <textarea className="input" rows={2} placeholder="Short description (optional)" value={desc} onChange={e=>setDesc(e.target.value)} />
+
+        {/* Links */}
+        <input className="input" placeholder="GitHub URL" value={github} onChange={e=>setGithub(e.target.value)} />
+        <button className="button" onClick={()=>addLink('github', github)}>Add GitHub Link</button>
+        <input className="input" placeholder="LinkedIn URL" value={linkedin} onChange={e=>setLinkedin(e.target.value)} />
+        <button className="button" onClick={()=>addLink('linkedin', linkedin)}>Add LinkedIn Link</button>
+        <input className="input" placeholder="Demo link (optional)" value={demo} onChange={e=>setDemo(e.target.value)} />
+        <button className="button" onClick={()=>addLink('demo', demo)}>Add Demo Link</button>
+
+        <div style={{display:'flex', gap:12, alignItems:'center'}}>
+          <button className="button button-primary" onClick={submitForReview}>Submit for Review</button>
+          {submittedMsg && <span className="muted">{submittedMsg}</span>}
         </div>
-        <input className="input" placeholder="GitHub URL" value={links.github} onChange={e=>setLinks({...links, github:e.target.value})} />
-        <input className="input" placeholder="LinkedIn URL" value={links.linkedin} onChange={e=>setLinks({...links, linkedin:e.target.value})} />
-        <input className="input" placeholder="Demo link (optional)" value={links.demo} onChange={e=>setLinks({...links, demo:e.target.value})} />
-        <textarea className="input" rows={3} placeholder="Short description" value={links.description} onChange={e=>setLinks({...links, description:e.target.value})} />
+
+        {loading ? <div className="card">Loading...</div> : (
+          <div className="grid" style={{gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))'}}>
+            {items.map(u => (
+              <div key={u.id} className="card" style={{padding:12}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                  <strong style={{fontSize:14}}>{u.name}</strong>
+                  <span className={`badge ${u.status==='approved'?'badge-success':u.status==='rejected'?'badge-danger':'badge-warning'}`}>{u.status||'pending'}</span>
+                </div>
+                <div className="muted" style={{fontSize:12, marginTop:6}}>{u.description || '—'}</div>
+                <div style={{display:'flex', justifyContent:'space-between', marginTop:8}}>
+                  <a className="button" href={u.url} target="_blank" rel="noreferrer">View</a>
+                  <button className="button" onClick={()=>remove(u.id)}>Remove</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

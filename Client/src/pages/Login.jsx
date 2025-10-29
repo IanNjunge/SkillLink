@@ -21,9 +21,9 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
-      const from = location.state?.from?.pathname || 
-                   (role === 'admin' ? '/admin' : role === 'mentor' ? '/mentor' : '/dashboard')
+      const me = await login(email, password)
+      const r = me?.role || role
+      const from = location.state?.from?.pathname || (r === 'admin' ? '/admin' : r === 'mentor' ? '/mentor' : '/dashboard')
       navigate(from, { replace: true })
     } catch (err) {
       setError('Invalid email or password')
