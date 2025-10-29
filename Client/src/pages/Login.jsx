@@ -1,6 +1,85 @@
+<<<<<<< HEAD
+import { useState } from 'react'
+import { useAuth } from '../state/AuthContext'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
+
+export default function Login() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      await login(email, password)
+      // Redirect to the page they tried to visit or dashboard
+      const from = location.state?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
+    } catch (err) {
+      setError('Invalid email or password')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="card" style={{maxWidth: 480, margin: '24px auto'}}>
+      <div className="badge" style={{marginBottom: 12}}>Login</div>
+      <h1 className="title-lg">Sign in to SkillLink</h1>
+      <form onSubmit={submit} className="form" style={{marginTop: 16}}>
+        {error && (
+          <div style={{ color: 'var(--red)', marginBottom: 12 }}>{error}</div>
+        )}
+        <input 
+          className="input" 
+          placeholder="Email" 
+          type="email"
+          value={email} 
+          onChange={e => setEmail(e.target.value)}
+          required
+          disabled={loading}
+        />
+        <input 
+          className="input" 
+          placeholder="Password" 
+          type="password" 
+          value={password} 
+          onChange={e => setPassword(e.target.value)}
+          required
+          disabled={loading}
+        />
+        <div style={{display:'flex', justifyContent:'flex-end'}}>
+          <Link to="/forgot-password" className="nav-link" style={{padding:0, border:'none'}}>
+            Forgot password?
+          </Link>
+        </div>
+        <button 
+          className="button button-primary button-block"
+          disabled={loading}
+        >
+          {loading ? 'Signing in...' : 'Sign In'}
+        </button>
+      </form>
+      <div style={{marginTop:12, fontSize:14}}>
+        <span className="muted">Don't have an account?</span>{' '}
+        <Link to="/register" className="nav-link" style={{padding:0, border:'none'}}>
+          Create an Account
+        </Link>
+      </div>
+    </div>
+  )
+}
+=======
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
+import { Api } from '../state/api'
 
 export default function Login() {
   const { login } = useAuth()
@@ -8,14 +87,21 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('learner')
+  const [error, setError] = useState('')
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    // Simulate login; replace with real API call when backend is ready
-    if (!email || !password) return alert('Enter email and password')
-    const finalRole = role === 'admin' ? 'admin' : (email.trim().toLowerCase() === 'admin@skilllink.com') ? 'admin' : role
-    login({ email, role: finalRole })
-    navigate(finalRole === 'admin' ? '/admin' : finalRole === 'mentor' ? '/mentor' : '/dashboard')
+    setError('')
+    if (!email || !password) return setError('Enter email and password')
+    try {
+      const user = await Api.login({ email, password })
+      // keep chosen role only for redirect (backend returns stored role)
+      login(user)
+      const finalRole = user.role || role
+      navigate(finalRole === 'admin' ? '/admin' : finalRole === 'mentor' ? '/mentor' : '/dashboard')
+    } catch (err) {
+      setError(err.message || 'Login failed')
+    }
   }
 
   return (
@@ -26,6 +112,7 @@ export default function Login() {
           <div style={{fontWeight:700}}>Login</div>
         </div>
         <h1 className="title-lg" style={{textAlign:'center', margin:'16px 0 24px'}}>Sign In To SkillLink</h1>
+        {error && <div className="card" style={{padding:12, background:'#ffe5e5', color:'#a40000'}}>{error}</div>}
         <form onSubmit={submit} style={{maxWidth: 640, margin:'0 auto', display:'flex', flexDirection:'column', gap:18}}>
           <div style={{display:'flex', gap:12, flexWrap:'wrap'}}>
             <button type="button" onClick={()=>setRole('learner')} className="button button-block" style={{background: role==='learner' ? 'var(--primary)' : '#eef1f5', color: role==='learner' ? '#fff' : '#222', border:'none', padding:'12px', borderRadius:'var(--radius)', fontWeight:600}}>Learner</button>
@@ -66,3 +153,4 @@ export default function Login() {
     </div>
   )
 }
+>>>>>>> main
