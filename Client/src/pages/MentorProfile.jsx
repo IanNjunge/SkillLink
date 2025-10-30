@@ -1,22 +1,24 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'
 const TOKEN_KEY = 'sl_token'
-
-const MOCK = {
-  1: { id: 1, name: 'Robinson Kimani', skills: ['React', 'UI'], about: 'Frontend engineer passionate about DX.', certificates: ['AWS Certified Cloud Practitioner.pdf', 'PMI Agile Foundations.png'] },
-  2: { id: 2, name: 'Brian Mbeumo', skills: ['Node', 'API', 'DB'], about: 'Backend engineer and API design.', certificates: [] },
-  3: { id: 3, name: 'ian NJunge', skills: ['Python', 'ML'], about: 'Data scientist and ML tutor.', certificates: [] },
-  4: { id: 4, name: 'Gideon lenkai', skills: ['Flutter', 'Dart'], about: 'Mobile developer building cross-platform apps.', certificates: [] },
-}
 
 export default function MentorProfile() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const mentor = useMemo(() => MOCK[id] || { id, name: 'Mentor', skills: [], about: '', certificates: [] }, [id])
+  const [mentor, setMentor] = useState({ id, name: 'Mentor', skills: [], about: '', certificates: [] })
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${BASE_URL}/mentors/${id}`)
+      .then(async r => { if (!r.ok) throw new Error(await r.text().catch(()=>'')); return r.json() })
+      .then(data => { if (!cancelled) setMentor({ id: data.id, name: data.name, skills: data.skills||[], about: '', certificates: [] }) })
+      .catch(() => setMentor(prev => prev))
+    return () => { cancelled = true }
+  }, [id])
 
   const reviewsKey = `sl_reviews_${mentor.id}`
   const [reviews, setReviews] = useState(() => { try { return JSON.parse(localStorage.getItem(reviewsKey))||[] } catch { return [] } })
@@ -38,16 +40,26 @@ export default function MentorProfile() {
   const reqKey = 'sl_requests'
   const [topic, setTopic] = useState('')
   const [message, setMessage] = useState('')
+  const [date, setDate] = useState('') // yyyy-mm-dd
+  const [time, setTime] = useState('') // hh:mm
+  const [duration, setDuration] = useState(60)
   const requestMentorship = async (e) => {
     e.preventDefault()
     if (!user || user.role!=='learner') return alert('Login as a learner to request mentorship')
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) return alert('Session expired. Please login again.')
     try {
+      // combine date and time to ISO if both provided
+      let preferred_time;
+      if (date && time) {
+        try {
+          preferred_time = new Date(`${date}T${time}:00`).toISOString()
+        } catch { preferred_time = undefined }
+      }
       const res = await fetch(`${BASE_URL}/requests/`, {
         method: 'POST',
         headers: { 'Content-Type':'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ mentor_id: Number(mentor.id), topic: topic.trim(), message: message.trim() })
+        body: JSON.stringify({ mentor_id: Number(mentor.id), topic: topic.trim(), message: message.trim(), preferred_time, duration_minutes: Number(duration) || 60 })
       })
       const data = await res.json().catch(()=> ({}))
       if (!res.ok) throw new Error(data.message || 'Failed to send request')
@@ -56,7 +68,7 @@ export default function MentorProfile() {
       const item = { id: data.id || Date.now(), mentorId: mentor.id, mentorName: mentor.name, learnerEmail: user.email, topic, message, status: (data.status||'pending').replace(/^./, c=>c.toUpperCase()) }
       localStorage.setItem(reqKey, JSON.stringify([item, ...list]))
       alert('Request sent. You can track it in your Requests page.')
-      setTopic(''); setMessage('')
+      setTopic(''); setMessage(''); setDate(''); setTime(''); setDuration(60)
       navigate('/requests')
     } catch (err) {
       alert(err.message || 'Failed to send request')
@@ -104,6 +116,13 @@ export default function MentorProfile() {
         <form onSubmit={requestMentorship} className="form" style={{marginTop:8}}>
           <input className="input" placeholder="Topic (e.g., React state)" value={topic} onChange={e=>setTopic(e.target.value)} />
           <textarea className="input" placeholder="Describe what you need help with" value={message} onChange={e=>setMessage(e.target.value)} rows={4} />
+          <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:12}}>
+            <input className="input" type="date" value={date} onChange={e=>setDate(e.target.value)} />
+            <input className="input" type="time" value={time} onChange={e=>setTime(e.target.value)} />
+            <select className="input" value={duration} onChange={e=>setDuration(e.target.value)}>
+              {[30,45,60,90].map(d => (<option key={d} value={d}>{d} mins</option>))}
+            </select>
+          </div>
           <button className="button button-primary">Send Request</button>
         </form>
       </div>

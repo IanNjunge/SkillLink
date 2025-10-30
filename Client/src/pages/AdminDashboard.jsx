@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'
 const TOKEN_KEY = 'sl_token'
 
 export default function AdminDashboard() {
@@ -16,7 +16,7 @@ export default function AdminDashboard() {
   const [evLoading, setEvLoading] = useState(true)
   const [evError, setEvError] = useState('')
 
-  // Load mentors from Server admin endpoints
+  
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) { setError('Not authenticated'); setLoading(false); return }

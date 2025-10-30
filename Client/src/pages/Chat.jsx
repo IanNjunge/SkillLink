@@ -1,17 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
-const MOCK_MENTORS = {
-  1: { id: 1, name: 'Alice Kim' },
-  2: { id: 2, name: 'Brian Odhiambo' },
-  3: { id: 3, name: 'Cynthia Wanjiru' },
-  4: { id: 4, name: 'David Mwangi' },
-}
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'
 
 export default function Chat() {
   const { mentorId } = useParams()
-  const mentor = useMemo(() => MOCK_MENTORS[mentorId] || { id: mentorId, name: 'Mentor' }, [mentorId])
-  const storageKey = `sl_chat_${mentor.id}`
+  const [mentor, setMentor] = useState({ id: mentorId, name: 'Mentor' })
+  const storageKey = `sl_chat_${mentorId}`
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${BASE_URL}/mentors/${mentorId}`)
+      .then(async r => {
+        if (!r.ok) throw new Error(await r.text().catch(()=>''))
+        return r.json()
+      })
+      .then(data => { if (!cancelled && data?.name) setMentor({ id: mentorId, name: data.name }) })
+      .catch(() => setMentor(prev => prev))
+    return () => { cancelled = true }
+  }, [mentorId])
 
   const [messages, setMessages] = useState(() => {
     try { return JSON.parse(localStorage.getItem(storageKey)) || [] } catch { return [] }

@@ -1,30 +1,38 @@
- import { useMemo, useState } from 'react'
+ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const MOCK_MENTORS = [
-  { id: 1, name: 'Robinson Kimani', verifiedIcon:'/home/ian/Pictures/verify.png', title: 'Frontend Engineer', skills: ['React','JS','UI'], rating: 4.8 },
-  { id: 2, name: 'Brian Mbeumo', verifiedIcon:'/home/ian/Pictures/verify.png', title: 'Backend Engineer', skills: ['Node','API','DB'], rating: 4.6 },
-  { id: 3, name: 'ian NJunge', verifiedIcon:'/home/ian/Pictures/verify.png', title: 'Data Scientist', skills: ['Python','ML','Pandas'], rating: 4.9 },
-  { id: 4, name: 'Gideon lenkai', verifiedIcon:'/home/ian/Pictures/verify.png', title: 'Mobile Dev', skills: ['Flutter','Dart'], rating: 4.5 },
-]
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'
 
 export default function SearchMentors() {
   const [query, setQuery] = useState('')
   const [minRating, setMinRating] = useState(0)
   const [skillFilter, setSkillFilter] = useState('')
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
 
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true); setError('')
+    const params = new URLSearchParams()
+    if (query.trim()) params.set('q', query.trim())
+    if (skillFilter) params.set('skill', skillFilter)
+    fetch(`${BASE_URL}/mentors?${params.toString()}`)
+      .then(async r => { if (!r.ok) throw new Error(await r.text().catch(()=>'')); return r.json() })
+      .then(data => { if (!cancelled) setItems(Array.isArray(data.items) ? data.items : []) })
+      .catch(() => { if (!cancelled) setError('Failed to load mentors') })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [query, skillFilter])
+
+  const allSkills = useMemo(() => Array.from(new Set(items.flatMap(m => m.skills || []))), [items])
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    let list = MOCK_MENTORS.filter(m => (
-      !q || m.name.toLowerCase().includes(q) ||
-      m.title.toLowerCase().includes(q) ||
-      m.skills.join(' ').toLowerCase().includes(q)
-    ))
-    if (minRating) list = list.filter(m => m.rating >= minRating)
-    if (skillFilter) list = list.filter(m => m.skills.map(s=>s.toLowerCase()).includes(skillFilter.toLowerCase()))
+    let list = items
+    if (minRating) list = list.filter(m => (m.avg_rating || 0) >= minRating)
     return list
-  }, [query, minRating, skillFilter])
+  }, [items, minRating])
 
   return (
     <div className="container" style={{paddingTop: 16}}>
@@ -45,13 +53,15 @@ export default function SearchMentors() {
             <option value={4.9}>4.9+</option>
           </select>
           <div className="tags">
-            {Array.from(new Set(MOCK_MENTORS.flatMap(m=>m.skills))).map(s => (
+            {allSkills.map(s => (
               <button key={s} className="tag" onClick={()=> setSkillFilter(skillFilter===s ? '' : s)} style={{cursor:'pointer', border: skillFilter===s ? '2px solid var(--primary)' : undefined}}>{s}</button>
             ))}
           </div>
         </div>
       </div>
 
+      {error && <div className="card" style={{padding:12, background:'#ffe5e5', color:'#a40000'}}>{error}</div>}
+      {loading && <div className="card">Loading...</div>}
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))'}}>
         {filtered.map(m => (
           <div key={m.id} className="card" style={{display:'flex', flexDirection:'column', gap:10}}>
@@ -59,14 +69,14 @@ export default function SearchMentors() {
               <div className="avatar" />
               <div>
                 <div style={{fontWeight:700}}>{m.name}</div>
-                <div className="muted" style={{fontSize:14}}>{m.title}</div>
+                <div className="muted" style={{fontSize:14}}>{(m.skills||[]).slice(0,2).join(' • ')}</div>
               </div>
             </div>
             <div className="tags">
-              {m.skills.map(s => (<span key={s} className="tag">{s}</span>))}
+              {(m.skills||[]).map(s => (<span key={s} className="tag">{s}</span>))}
             </div>
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:8}}>
-              <div className="muted" style={{fontSize:14}}>⭐ {m.rating}</div>
+              <div className="muted" style={{fontSize:14}}>⭐ {m.avg_rating ? m.avg_rating.toFixed(1) : '—'}</div>
               <div style={{display:'flex', gap:8}}>
                 <button className="button" onClick={()=>navigate(`/chat/${m.id}`)}>Message</button>
                 <button className="button button-primary" onClick={()=>navigate(`/mentor/${m.id}`)}>View Profile</button>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../state/AuthContext'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'
 const TOKEN_KEY = 'sl_token'
 
 export default function LearnerRequests() {
@@ -55,6 +55,8 @@ export default function LearnerRequests() {
                 <th>Mentor</th>
                 <th>Topic</th>
                 <th>Status</th>
+                <th>Preferred Time</th>
+                <th>Duration</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -64,6 +66,8 @@ export default function LearnerRequests() {
                   <td>{r.mentorName || r.mentor_id}</td>
                   <td>{r.topic}</td>
                   <td>{r.status}</td>
+                  <td>{r.preferred_time ? new Date(r.preferred_time).toLocaleString() : '—'}</td>
+                  <td>{r.duration_minutes ? `${r.duration_minutes}m` : '—'}</td>
                   <td>
                     {r.status === 'pending' || r.status === 'Pending' ? (
                       <button className="button" onClick={()=>cancel(r.id)}>Cancel</button>

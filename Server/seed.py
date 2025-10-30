@@ -1,6 +1,7 @@
 from app import create_app
 from extensions import db
-from models import User, Skill, UserSkill, MentorshipRequest, Review
+from datetime import datetime, timedelta
+from models import User, Skill, UserSkill, MentorshipRequest, Review, Session
 
 
 def seed():
@@ -53,9 +54,29 @@ def seed():
         add_skill(mentor4, 'Flutter')
         add_skill(mentor4, 'Dart')
 
-        # Sample mentorship request
-        req = MentorshipRequest(learner_id=learner.id, mentor_id=mentor1.id, topic='State management', message='Need help with React hooks')
+        # Sample mentorship requests (with booking preferences)
+        req = MentorshipRequest(
+            learner_id=learner.id,
+            mentor_id=mentor1.id,
+            topic='State management',
+            message='Need help with React hooks',
+            preferred_time=datetime.utcnow() + timedelta(days=1),
+            duration_minutes=60,
+        )
         db.session.add(req)
+        db.session.flush()
+
+        # Mark one request as accepted and create a scheduled session
+        req.status = 'accepted'
+        sess = Session(
+            mentor_id=mentor1.id,
+            learner_id=learner.id,
+            request_id=req.id,
+            start_time=req.preferred_time or (datetime.utcnow() + timedelta(days=1)),
+            duration_minutes=req.duration_minutes or 60,
+            status='scheduled',
+        )
+        db.session.add(sess)
 
         # Sample reviews to approximate ratings
         db.session.add(Review(mentor_id=mentor1.id, learner_id=learner.id, rating=5, comment='Great session!'))  # ~4.8
@@ -64,7 +85,7 @@ def seed():
         db.session.add(Review(mentor_id=mentor4.id, learner_id=learner.id, rating=4, comment='Good mobile pointers'))  # ~4.5
 
         db.session.commit()
-        print('Seed complete: users, skills, requests, reviews')
+        print('Seed complete: users, skills, requests, sessions, reviews')
 
 
 if __name__ == '__main__':

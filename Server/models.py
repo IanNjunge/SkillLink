@@ -45,6 +45,9 @@ class MentorshipRequest(db.Model):
     topic = db.Column(db.String(255), nullable=False)
     message = db.Column(db.Text)
     status = db.Column(db.String(20), nullable=False, default='pending')
+    # Optional booking preferences from learner
+    preferred_time = db.Column(db.DateTime, nullable=True)
+    duration_minutes = db.Column(db.Integer, nullable=True, default=60)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -69,4 +72,16 @@ class Review(db.Model):
     learner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Session(db.Model):
+    __tablename__ = 'sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    learner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    request_id = db.Column(db.Integer, db.ForeignKey('mentorship_requests.id'), nullable=True)
+    start_time = db.Column(db.DateTime, nullable=False)
+    duration_minutes = db.Column(db.Integer, nullable=False, default=60)
+    status = db.Column(db.String(20), nullable=False, default='scheduled')  # scheduled|completed|cancelled
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
