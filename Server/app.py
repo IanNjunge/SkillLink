@@ -1,4 +1,5 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
+import os
 from dotenv import load_dotenv
 from extensions import db, migrate, jwt, cors, swagger
 from config import get_config
@@ -10,10 +11,10 @@ from blueprints.reviews import reviews_bp
 from blueprints.admin import admin_bp
 from blueprints.evidence import evidence_bp
 
-
 def create_app():
     load_dotenv()
-    app = Flask(__name__)
+    # Serve built React assets from Server/static (populated from Client/dist)
+    app = Flask(__name__, static_folder='static', static_url_path='/')
     app.config.from_object(get_config())
 
     # init extensions
@@ -67,6 +68,21 @@ def create_app():
     @app.get('/health')
     def health():
         return jsonify(status='ok')
+
+    # Fallback routes to serve React index.html for client-side routing
+    @app.route('/')
+    @app.route('/<path:path>')
+    def serve_react(path=''):
+        # If the requested asset exists in static, serve it; otherwise index.html
+        static_folder = app.static_folder
+        target_path = os.path.join(static_folder, path)
+        if path and os.path.exists(target_path):
+            # send exact asset (js/css/images)
+            # For directories, try to send index.html inside them
+            if os.path.isdir(target_path) and os.path.exists(os.path.join(target_path, 'index.html')):
+                return send_from_directory(target_path, 'index.html')
+            return send_from_directory(static_folder, path)
+        return send_from_directory(static_folder, 'index.html')
 
     return app
 
