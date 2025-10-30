@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
 
@@ -9,6 +9,14 @@ export default function ResetPassword() {
   const [msg, setMsg] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const t = params.get('token') || ''
+    const e = params.get('email') || ''
+    if (t) setToken(t)
+    if (e) setEmail(e)
+  }, [])
 
   const submit = async (e) => {
     e.preventDefault()
