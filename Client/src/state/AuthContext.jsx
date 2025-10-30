@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'
 // debug: show where requests go
 console.log('[Auth] BASE_URL =', BASE_URL)
 const TOKEN_KEY = 'sl_token'
