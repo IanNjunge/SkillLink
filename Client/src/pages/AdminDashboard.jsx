@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
 
-const BASE_URL = import.meta.env.VITE_API_URL || ''
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
 const TOKEN_KEY = 'sl_token'
 
 export default function AdminDashboard() {
@@ -68,6 +68,8 @@ export default function AdminDashboard() {
       setError('Failed to update status')
     }
 
+  }
+
   const reviewEvidence = async (id, status) => {
     try {
       const token = localStorage.getItem(TOKEN_KEY)
@@ -81,7 +83,6 @@ export default function AdminDashboard() {
     } catch {
       setEvError('Failed to update evidence')
     }
-  }
   }
 
   const togglePending = async (id) => {
