@@ -14,7 +14,7 @@ from blueprints.evidence import evidence_bp
 def create_app():
     load_dotenv()
     # Serve built React assets from Server/static (populated from Client/dist)
-    app = Flask(__name__, static_folder='static', static_url_path='/')
+    app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.config.from_object(get_config())
 
     # init extensions
@@ -44,7 +44,7 @@ def create_app():
             'version': '1.0.0',
             'description': 'API for SkillLink platform',
         },
-        'basePath': '/',
+        'basePath': '/api',
         'schemes': ['http'],
         'securityDefinitions': {
             'Bearer': {
@@ -57,21 +57,21 @@ def create_app():
     })
 
     # blueprints
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(users_bp, url_prefix='/users')
-    app.register_blueprint(mentors_bp, url_prefix='/mentors')
-    app.register_blueprint(requests_bp, url_prefix='/requests')
-    app.register_blueprint(reviews_bp, url_prefix='/reviews')
-    app.register_blueprint(admin_bp, url_prefix='/admin')
-    app.register_blueprint(evidence_bp, url_prefix='/evidence')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(users_bp, url_prefix='/api/users')
+    app.register_blueprint(mentors_bp, url_prefix='/api/mentors')
+    app.register_blueprint(requests_bp, url_prefix='/api/requests')
+    app.register_blueprint(reviews_bp, url_prefix='/api/reviews')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(evidence_bp, url_prefix='/api/evidence')
 
-    @app.get('/health')
+    @app.get('/api/health')
     def health():
         return jsonify(status='ok')
 
     # Fallback routes to serve React index.html for client-side routing
-    @app.route('/')
-    @app.route('/<path:path>')
+    @app.route('/app')
+    @app.route('/app/<path:path>')
     def serve_react(path=''):
         # If the requested asset exists in static, serve it; otherwise index.html
         static_folder = app.static_folder
