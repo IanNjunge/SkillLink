@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from werkzeug.utils import secure_filename
 from extensions import db
 from models import Evidence
+from models import User
 
 ALLOWED_EXTS = {'.png', '.jpg', '.jpeg', '.gif', '.pdf'}
 
@@ -50,6 +51,10 @@ def upload():
         uid = ident
     if claims.get('role') != 'mentor':
         return jsonify({"error":"Forbidden","message":"Mentors only"}), 403
+    # block uploads for already verified mentors
+    me = User.query.get(uid)
+    if me is not None and getattr(me, 'verified', False):
+        return jsonify({"error":"Forbidden","message":"Already verified; no evidence required"}), 403
     if 'file' not in request.files:
         return jsonify({"error":"ValidationError","message":"Missing file"}), 400
     f = request.files['file']
@@ -88,6 +93,9 @@ def add_link():
         uid = ident
     if claims.get('role') != 'mentor':
         return jsonify({"error":"Forbidden","message":"Mentors only"}), 403
+    me = User.query.get(uid)
+    if me is not None and getattr(me, 'verified', False):
+        return jsonify({"error":"Forbidden","message":"Already verified; no evidence required"}), 403
     data = request.get_json(silent=True) or {}
     url = (data.get('url') or '').strip()
     name = (data.get('name') or '').strip() or 'Link'
@@ -120,6 +128,9 @@ def submit_for_review():
         uid = ident
     if claims.get('role') != 'mentor':
         return jsonify({"error":"Forbidden","message":"Mentors only"}), 403
+    me = User.query.get(uid)
+    if me is not None and getattr(me, 'verified', False):
+        return jsonify({"error":"Forbidden","message":"Already verified; no evidence required"}), 403
     # Uploads are already created with status='pending'. This endpoint exists for UX to confirm submission.
     total = Evidence.query.filter_by(mentor_id=uid).count()
     pending = Evidence.query.filter_by(mentor_id=uid, status='pending').count()

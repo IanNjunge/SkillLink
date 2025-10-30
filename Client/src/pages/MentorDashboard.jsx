@@ -1,11 +1,13 @@
  import { useEffect, useState } from 'react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
+import { useAuth } from '../state/AuthContext'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'
 const TOKEN_KEY = 'sl_token'
 
 export default function MentorDashboard() {
+  const { user } = useAuth()
   const [skills, setSkills] = useState(() => {
     try {
       const saved = localStorage.getItem('sl_mentor_skills')
@@ -79,7 +81,7 @@ export default function MentorDashboard() {
       </div>
 
       {/* Evidence section */}
-      <EvidenceSection />
+      {!user?.verified && <EvidenceSection />}
     </div>
   )
 }

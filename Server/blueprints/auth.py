@@ -71,7 +71,7 @@ def login():
     token = create_access_token(identity=str(u.id), additional_claims={"email": u.email, "role": u.role})
     return jsonify({
         "access_token": token,
-        "user": {"id": u.id, "email": u.email, "role": u.role}
+        "user": {"id": u.id, "email": u.email, "role": u.role, "name": u.name, "verified": bool(getattr(u, 'verified', False))}
     })
 
 
@@ -84,4 +84,15 @@ def me():
         uid = int(ident)
     except Exception:
         uid = ident
-    return jsonify({"id": uid, "email": claims.get("email"), "role": claims.get("role")})
+    u = None
+    try:
+        u = User.query.get(uid)
+    except Exception:
+        u = None
+    return jsonify({
+        "id": uid,
+        "email": claims.get("email"),
+        "role": claims.get("role"),
+        "name": getattr(u, 'name', None),
+        "verified": bool(getattr(u, 'verified', False)) if u else False
+    })
