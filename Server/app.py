@@ -12,6 +12,7 @@ from blueprints.admin import admin_bp
 from blueprints.sessions import sessions_bp
 from blueprints.evidence import evidence_bp
 
+
 def create_app():
     load_dotenv()
     # Serve built React assets from Server/static (populated from Client/dist)
@@ -28,6 +29,7 @@ def create_app():
         'http://localhost:5174',
         'http://127.0.0.1:5174',
         'https://skilllink-wilson-phase5.netlify.app',
+         'https://skilllink-frontend-wu9m.onrender.com',
     ]
     cors(app, resources={
         r"/*": {
