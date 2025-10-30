@@ -13,7 +13,7 @@ from blueprints.evidence import evidence_bp
 
 def create_app():
     load_dotenv()
-    app = Flask(_name_)
+    app = Flask(__name__)
     app.config.from_object(get_config())
 
     # init extensions
@@ -71,6 +71,6 @@ def create_app():
     return app
 
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     app = create_app()
     app.run(host='0.0.0.0', port=5000)

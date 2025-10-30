@@ -3,7 +3,7 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from extensions import db
 from models import User
 
-auth_bp = Blueprint('auth', _name_)
+auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.post('/forgot')

@@ -4,7 +4,7 @@ from sqlalchemy import desc
 from extensions import db
 from models import MentorshipRequest, User
 
-requests_bp = Blueprint('requests', _name_)
+requests_bp = Blueprint('requests', __name__)
 
 
 @requests_bp.post('/')

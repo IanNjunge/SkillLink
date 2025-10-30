@@ -1,9 +1,9 @@
- from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from extensions import db
 from models import User, Skill, UserSkill
 
-users_bp = Blueprint('users', _name_)
+users_bp = Blueprint('users', __name__)
 
 
 @users_bp.get('/me')

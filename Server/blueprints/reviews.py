@@ -4,8 +4,7 @@ from sqlalchemy import desc
 from extensions import db
 from models import Review, User
 
-reviews_bp = Blueprint('reviews', _name_)
-
+reviews_bp = Blueprint('reviews', __name__)
 
 @reviews_bp.get('/<int:mentor_id>')
 @jwt_required(optional=True)
