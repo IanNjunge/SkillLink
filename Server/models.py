@@ -85,3 +85,32 @@ class Session(db.Model):
     duration_minutes = db.Column(db.Integer, nullable=False, default=60)
     status = db.Column(db.String(20), nullable=False, default='scheduled')  # scheduled|completed|cancelled
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Conversation(db.Model):
+    __tablename__ = 'conversations'
+    id = db.Column(db.Integer, primary_key=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    learner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    mentor = db.relationship('User', foreign_keys=[mentor_id], lazy='joined')
+    learner = db.relationship('User', foreign_keys=[learner_id], lazy='joined')
+
+    __table_args__ = (
+        db.UniqueConstraint('mentor_id', 'learner_id', name='uq_conversation_pair'),
+    )
+
+
+class Message(db.Model):
+    __tablename__ = 'messages'
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False, index=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    text = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    read_at = db.Column(db.DateTime, nullable=True)
+
+    conversation = db.relationship('Conversation', backref=db.backref('messages', lazy='selectin', order_by='Message.created_at'))
+    sender = db.relationship('User', lazy='joined')

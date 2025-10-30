@@ -1,115 +1,118 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'
+const TOKEN_KEY = 'sl_token'
 
 export default function Chat() {
-  const { mentorId } = useParams()
-  const [mentor, setMentor] = useState({ id: mentorId, name: 'Mentor' })
-  const storageKey = `sl_chat_${mentorId}`
-
-  useEffect(() => {
-    let cancelled = false
-    fetch(`${BASE_URL}/mentors/${mentorId}`)
-      .then(async r => {
-        if (!r.ok) throw new Error(await r.text().catch(()=>''))
-        return r.json()
-      })
-      .then(data => { if (!cancelled && data?.name) setMentor({ id: mentorId, name: data.name }) })
-      .catch(() => setMentor(prev => prev))
-    return () => { cancelled = true }
-  }, [mentorId])
-
-  const [messages, setMessages] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey)) || [] } catch { return [] }
-  })
+  const { mentorId } = useParams() // can be conversation id (from inbox) or mentor id (starting new chat)
+  const [headerName, setHeaderName] = useState('Direct messages')
+  const [conversation, setConversation] = useState(null)
+  const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
-  const [file, setFile] = useState(null)
   const endRef = useRef(null)
 
+  // helper to fetch with auth
+  const authFetch = async (url, options = {}) => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    return fetch(url, { ...(options||{}), headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(options.headers||{}) } })
+  }
+
+  // load or create conversation
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(messages))
-  }, [messages, storageKey])
+    let cancelled = false
+    const load = async () => {
+      // Try treat param as conversation id first
+      try {
+        const res = await authFetch(`${BASE_URL}/conversations/${mentorId}/messages`)
+        if (res.ok) {
+          // We have a conversation id
+          const msgs = await res.json()
+          if (cancelled) return
+          // fetch conversation list to get names and pick this one
+          const convRes = await authFetch(`${BASE_URL}/conversations`)
+          if (convRes.ok) {
+            const list = await convRes.json()
+            const found = list.find(c => String(c.id) === String(mentorId))
+            if (found) {
+              setConversation(found)
+              setHeaderName(found.other?.name || 'Direct messages')
+            }
+          }
+          setMessages(msgs.map(m => ({
+            id: m.id,
+            from: (conversation && m.sender_id === conversation.other?.id) ? 'other' : undefined, // will normalize below after conv fetch
+            sender_id: m.sender_id,
+            text: m.text,
+            time: m.created_at
+          })))
+          return
+        }
+      } catch {}
+
+      // Otherwise, create/get conversation by mentor id (learner initiating chat)
+      try {
+        const res = await authFetch(`${BASE_URL}/conversations`, {
+          method: 'POST',
+          body: JSON.stringify({ mentor_id: Number(mentorId) })
+        })
+        if (!res.ok) throw new Error(await res.text().catch(()=>''))
+        const conv = await res.json()
+        if (cancelled) return
+        setConversation(conv)
+        setHeaderName(conv.other?.name || 'Direct messages')
+        const msgsRes = await authFetch(`${BASE_URL}/conversations/${conv.id}/messages`)
+        const msgs = msgsRes.ok ? await msgsRes.json() : []
+        setMessages(msgs.map(m => ({ id: m.id, from: m.sender_id === conv.other?.id ? 'other' : 'me', text: m.text, time: m.created_at })))
+      } catch (e) {
+        // fallback header
+        setHeaderName('Direct messages')
+      }
+    }
+    load()
+    const timer = setInterval(load, 4000)
+    return () => { cancelled = true; clearInterval(timer) }
+  }, [mentorId])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const send = (e) => {
+  const send = async (e) => {
     e.preventDefault()
-    if (!text.trim() && !file) return
-    const now = new Date().toISOString()
-    const isImage = file && file.type && file.type.startsWith('image/')
-    let fileUrl = null
-    let fileName = null
-    if (file) {
-      fileUrl = URL.createObjectURL(file)
-      fileName = file.name
-    }
-    const pending = { from: 'me', text: text.trim(), time: now, status: 'sending', fileUrl, fileName, isImage }
-    setMessages(prev => [...prev, pending])
+    if (!text.trim() || !conversation?.id) return
+    const payload = { text: text.trim() }
     setText('')
-    setFile(null)
-    // mock mentor autoreply
-    setTimeout(() => {
-      // mark last my message delivered
-      setMessages(prev => {
-        const copy = [...prev]
-        const idx = copy.slice().reverse().findIndex(m => m.from==='me' && m.status==='sending')
-        if (idx !== -1) {
-          const pos = copy.length - 1 - idx
-          copy[pos] = { ...copy[pos], status: 'delivered' }
-        }
-        return copy
+    try {
+      const res = await authFetch(`${BASE_URL}/conversations/${conversation.id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
       })
-      setMessages(prev => [...prev, { from: 'mentor', text: 'Thanks for your message! I\'ll get back to you shortly.', time: new Date().toISOString() }])
-    }, 800)
-    // simulate read after a while
-    setTimeout(() => {
-      setMessages(prev => {
-        const copy = [...prev]
-        const idx = copy.slice().reverse().findIndex(m => m.from==='me' && m.status==='delivered')
-        if (idx !== -1) {
-          const pos = copy.length - 1 - idx
-          copy[pos] = { ...copy[pos], status: 'read' }
-        }
-        return copy
-      })
-    }, 2000)
+      if (!res.ok) throw new Error(await res.text().catch(()=>''))
+      const m = await res.json()
+      setMessages(prev => [...prev, { id: m.id, from: 'me', text: m.text, time: m.created_at }])
+    } catch (e) {
+      // ignore for now
+    }
   }
-
-  // mark all mentor messages as read when page opens
-  useEffect(() => {
-    if (!messages.length) return
-    const updated = messages.map(m => (m.from !== 'me' ? { ...m, readAt: m.readAt || new Date().toISOString() } : m))
-    setMessages(updated)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   return (
     <div className="container" style={{paddingTop: 16}}>
       <div className="card" style={{padding:'12px 16px', marginBottom: 12, display:'flex', alignItems:'center', gap:12}}>
         <div className="avatar" />
         <div>
-          <div className="title-md" style={{margin:0}}>{mentor.name}</div>
+          <div className="title-md" style={{margin:0}}>{headerName}</div>
           <div className="muted" style={{fontSize:12}}>Direct messages</div>
         </div>
       </div>
 
       <div className="card" style={{height: '50vh', overflowY: 'auto', display:'flex', flexDirection:'column', gap:8, padding:12}}>
         {messages.map((m, i) => (
-          <div key={i} style={{display:'flex', justifyContent: m.from === 'me' ? 'flex-end' : 'flex-start'}}>
+          <div key={m.id || i} style={{display:'flex', justifyContent: m.from === 'me' ? 'flex-end' : 'flex-start'}}>
             <div style={{maxWidth:'70%', background: m.from === 'me' ? 'var(--primary)' : '#eef1f5', color: m.from === 'me' ? '#fff' : '#111', padding:'10px 12px', borderRadius:12}}>
-              {m.fileUrl && m.isImage && (
-                <img src={m.fileUrl} alt={m.fileName} style={{maxWidth:'100%', borderRadius:8, marginBottom:6}} />
-              )}
-              {m.fileUrl && !m.isImage && (
-                <a href={m.fileUrl} download={m.fileName} style={{color: m.from==='me' ? '#fff' : '#111', textDecoration:'underline'}}>{m.fileName}</a>
-              )}
               {m.text && <div style={{whiteSpace:'pre-wrap'}}>{m.text}</div>}
               <div className="muted" style={{fontSize:10, marginTop:4, opacity:0.9, display:'flex', gap:8, alignItems:'center'}}>
                 <span>{new Date(m.time).toLocaleTimeString()}</span>
-                {m.from==='me' && m.status && <span>• {m.status}</span>}
               </div>
             </div>
           </div>
@@ -124,11 +127,6 @@ export default function Chat() {
           placeholder="Type your message..."
           style={{flex:1, background:'#eef1f5', border:'none', padding:'14px 16px', borderRadius:'var(--radius)', outline:'none', fontSize:16}}
         />
-        <label className="button" style={{cursor:'pointer'}}>
-          Attach
-          <input type="file" accept="image/*,application/pdf" onChange={e=>setFile(e.target.files?.[0]||null)} style={{display:'none'}} />
-        </label>
-        {file && <span className="muted" style={{fontSize:12}}>{file.name}</span>}
         <button className="button button-primary" style={{padding:'12px 16px', borderRadius:'var(--radius)'}}>Send</button>
       </form>
     </div>

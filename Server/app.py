@@ -10,6 +10,7 @@ from blueprints.requests import requests_bp
 from blueprints.reviews import reviews_bp
 from blueprints.admin import admin_bp
 from blueprints.sessions import sessions_bp
+from blueprints.conversations import conversations_bp
 from blueprints.evidence import evidence_bp
 
 
@@ -68,6 +69,7 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(evidence_bp, url_prefix='/api/evidence')
     app.register_blueprint(sessions_bp, url_prefix='/api/sessions')
+    app.register_blueprint(conversations_bp, url_prefix='/api/conversations')
 
     @app.get('/api/health')
     def health():
