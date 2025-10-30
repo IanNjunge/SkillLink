@@ -42,7 +42,8 @@ def register():
     name = (data.get('name') or '').strip()
     email = (data.get('email') or '').strip().lower()
     password = data.get('password') or ''
-    role = (data.get('role') or 'learner').strip().lower()
+    # defensively cast to string to avoid calling .strip on non-strings
+    role = str(data.get('role') or 'learner').strip().lower()
     if not name or not email or not password:
         return jsonify({"error":"ValidationError","message":"name, email, password required"}), 400
     if role not in ('learner','mentor','admin'):

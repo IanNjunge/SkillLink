@@ -19,7 +19,7 @@ export default function Register() {
     setError('')
     setLoading(true)
     try {
-      await register(form.email, form.password, form.name, role === 'mentor')
+      await register(form.email, form.password, form.name, role)
       navigate(role === 'mentor' ? '/mentor' : '/dashboard')
     } catch (err) {
       setError('Registration failed. Email may be taken.')
