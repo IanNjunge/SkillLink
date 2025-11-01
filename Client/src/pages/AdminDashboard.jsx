@@ -15,6 +15,9 @@ export default function AdminDashboard() {
   const [evidence, setEvidence] = useState([])
   const [evLoading, setEvLoading] = useState(true)
   const [evError, setEvError] = useState('')
+  const [mentorEvidence, setMentorEvidence] = useState({})
+  const [openEvidenceFor, setOpenEvidenceFor] = useState(null)
+  const [evRowLoading, setEvRowLoading] = useState(false)
 
   
   useEffect(() => {
@@ -80,8 +83,34 @@ export default function AdminDashboard() {
       })
       if (!res.ok) throw new Error()
       setEvidence(prev => prev.filter(e => e.id !== id))
+      setMentorEvidence(prev => {
+        const next = { ...prev }
+        Object.keys(next).forEach(k => {
+          next[k] = (next[k] || []).filter(e => e.id !== id)
+        })
+        return next
+      })
     } catch {
       setEvError('Failed to update evidence')
+    }
+  }
+
+  const loadMentorEvidence = async (mentorId) => {
+    try {
+      setEvRowLoading(true)
+      const token = localStorage.getItem(TOKEN_KEY)
+      const res = await fetch(`${BASE_URL}/admin/evidence?mentor_id=${mentorId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setMentorEvidence(prev => ({ ...prev, [mentorId]: Array.isArray(data) ? data : [] }))
+      setOpenEvidenceFor(mentorId)
+    } catch {
+      setMentorEvidence(prev => ({ ...prev, [mentorId]: [] }))
+      setOpenEvidenceFor(mentorId)
+    } finally {
+      setEvRowLoading(false)
     }
   }
 
@@ -162,23 +191,60 @@ export default function AdminDashboard() {
             </thead>
             <tbody>
               {filtered.map(m => (
-                <tr key={m.id}>
-                  <td>{m.name}</td>
-                  <td>{m.skills?.join(', ') || 'No skills'}</td>
-                  <td>
-                    <span className={`badge ${m.status==='Active'?'badge-success':'badge-warning'}`}>
-                      {m.status || 'Pending'}
-                    </span>
-                  </td>
-                  <td>
-                    <Link className="button" to={`/mentor/${m.id}`} style={{marginRight:8}}>View</Link>
-                    {m.status==='Pending' ? (
-                      <button className="button button-primary" onClick={()=>verify(m.id)}>Verify</button>
-                    ) : (
-                      <button className="button" onClick={()=>togglePending(m.id)}>Set Pending</button>
-                    )}
-                  </td>
-                </tr>
+                <>
+                  <tr key={m.id}>
+                    <td>{m.name}</td>
+                    <td>{m.skills?.join(', ') || 'No skills'}</td>
+                    <td>
+                      <span className={`badge ${m.status==='Active'?'badge-success':'badge-warning'}`}>
+                        {m.status || 'Pending'}
+                      </span>
+                    </td>
+                    <td>
+                      <Link className="button" to={`/mentor/${m.id}`} style={{marginRight:8}}>View</Link>
+                      <button className="button" style={{marginRight:8}}
+                        onClick={()=> loadMentorEvidence(m.id)}>
+                        Evidence
+                      </button>
+                      {m.status==='Pending' ? (
+                        <button className="button button-primary" onClick={()=>verify(m.id)}>Verify</button>
+                      ) : (
+                        <button className="button" onClick={()=>togglePending(m.id)}>Set Pending</button>
+                      )}
+                    </td>
+                  </tr>
+                  {openEvidenceFor === m.id && (
+                    <tr>
+                      <td colSpan={4}>
+                        {evRowLoading ? (
+                          <div>Loading evidence...</div>
+                        ) : (
+                          (mentorEvidence[m.id] && mentorEvidence[m.id].length) ? (
+                            <div style={{display:'grid', gap:8}}>
+                              {mentorEvidence[m.id].map(e => (
+                                <div key={e.id} className="card" style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:12}}>
+                                  <div style={{display:'flex', gap:12, alignItems:'center'}}>
+                                    <span className="badge">#{e.id}</span>
+                                    <span style={{fontWeight:600}}>{e.name}</span>
+                                    <span className="muted">{e.type}</span>
+                                    <span className="muted" style={{maxWidth:360, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{e.description || '—'}</span>
+                                  </div>
+                                  <div>
+                                    <a className="button" href={e.url} target="_blank" rel="noreferrer" style={{marginRight:8}}>View</a>
+                                    <button className="button button-primary" onClick={()=>reviewEvidence(e.id,'approved')} style={{marginRight:8}}>Approve</button>
+                                    <button className="button" onClick={()=>reviewEvidence(e.id,'rejected')}>Reject</button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="muted">No evidence submitted</div>
+                          )
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>
