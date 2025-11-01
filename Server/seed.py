@@ -13,14 +13,13 @@ def seed():
         # Users
         admin = User(name='Admin', email='admin@skilllink.com', role='admin')
         admin.set_password('admin123')
-
-        mentor1 = User(name='Robinson Kimani', email='mentor1@example.com', role='mentor', verified=False)
+        mentor1 = User(name='Robinson Kimani', email='mentor1@example.com', role='mentor', verified=True)
         mentor1.set_password('password')
-        mentor2 = User(name='Brian Mbeumo', email='mentor2@example.com', role='mentor', verified=False)
+        mentor2 = User(name='Brian Mbeumo', email='mentor2@example.com', role='mentor', verified=True)
         mentor2.set_password('password')
-        mentor3 = User(name='Ian Njunge', email='mentor3@example.com', role='mentor', verified=False)
+        mentor3 = User(name='Ian Njunge', email='mentor3@example.com', role='mentor', verified=True)
         mentor3.set_password('password')
-        mentor4 = User(name='Gideon lenkai', email='mentor4@example.com', role='mentor', verified=False)
+        mentor4 = User(name='Gideon lenkai', email='mentor4@example.com', role='mentor', verified=True)
         mentor4.set_password('password')
 
         learner = User(name='Learner One', email='learner1@example.com', role='learner')
