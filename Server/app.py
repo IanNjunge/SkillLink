@@ -31,6 +31,7 @@ def create_app():
         'http://127.0.0.1:5174',
         'https://skilllink-wilson-phase5.netlify.app',
          'https://skilllink-frontend-wu9m.onrender.com',
+        'https://bright-unicorn-0215b5.netlify.app',
     ]
     cors(app, resources={
         r"/*": {
